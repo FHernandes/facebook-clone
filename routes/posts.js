@@ -1,6 +1,24 @@
 const User = require("../models/User");
 const Post = require("../models/Post");
 const router = require("express").Router();
+const multer = require("multer");
+
+const storage = multer.diskStorage({
+    destination: (req, file, callback) => {
+        callback(null, "./uploads");
+    },
+    filename: (req, file, callback) => {
+        callback(null,file.originalname);
+        // callback(null, new Date().toISOString() + file.originalname);
+    }
+})
+
+const upload = multer({ storage: storage });
+
+//upload image
+router.post("/upload", upload.single("file"), (req, res) => {
+    return res.status(200).json({image: `http://localhost:8000/static/${req.file.filename}`});
+});
 
 // create a post
 router.post("/", async (req, res) => {
@@ -76,7 +94,7 @@ router.get("/:id", async (req, res) => {
 // get timeline posts
 router.get("/timeline/all", async (req, res) => {
     try {
-        const currentUser = await User.findById(req.body.userId);
+        const currentUser = await User.findById("625c394e6a5b69fda867b24f");
         const userPosts = await Post.find({ userId: currentUser._id });
         const friendPosts = await Promise.all(
             currentUser.followings.map((friendId) => {
@@ -85,6 +103,7 @@ router.get("/timeline/all", async (req, res) => {
         );
         res.json(userPosts.concat(...friendPosts))
     } catch (err) {
+        console.log(err);
         res.status(500).json(err);
     }
 });
